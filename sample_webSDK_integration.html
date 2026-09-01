@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <!-- REPLACE <version_number> with the version number of the SDK you want to use -->
+<script src="https://hv-web-sdk-cdn.hyperverge.co/hyperverge-web-sdk@<actual_SDK_VERSION>/src/sdk.min.js"></script>
+</head>
+
+<body>
+    <button type="button" onclick="runGlobal();">
+       Launch Workflow
+    </button>
+    <div class="result" style="width: 40%;"></div>
+
+    <script>
+
+
+        async function runGlobal() {
+        
+        
+						// Pass the jwt_token generated from backend
+            const hyperKycConfig = new HyperKycConfig(
+                '<jwt_token>',
+                false,
+            );
+            
+
+
+            // setInputs is optional, you can skip it if your workflow doesn't require any inputs
+            hyperKycConfig.setInputs({
+                "input_key": "input_value"
+            });
+
+
+
+            // supportDarkMode is optional
+            hyperKycConfig.supportDarkMode(false);
+
+            // setCustomFontStylesheet is optional
+            hyperKycConfig.setCustomFontStylesheet('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400..700&family=Roboto+Condensed:ital,wght@0,100..900;1,100..900&family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap');
+
+
+
+            // setInitialLoaderColor is optional
+            hyperKycConfig.setInitialLoaderColor('<color>');
+
+           
+
+            // setDefaultLangCode is optional
+            hyperKycConfig.setDefaultLangCode('<language>');
+
+        
+
+            // setUseLocation is optional
+            hyperKycConfig.setUseLocation(false);
+
+
+
+            await HyperKYCModule.launch(hyperKycConfig, callback);
+        }
+
+        callback = (HVResponse) => {
+            console.log(HVResponse);
+        };
+        
+    </script>
+
+</body>
+
+</html>

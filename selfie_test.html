@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Selfie Workflow Test</title>
+  <!-- @latest is stale (2022). Use a current version. -->
+  <script src="https://hv-web-sdk-cdn.hyperverge.co/hyperverge-web-sdk@9.5.0/src/sdk.min.js"></script>
+</head>
+<body>
+  <button type="button" onclick="launchSelfie()">Launch Selfie</button>
+  <p id="status"></p>
+
+  <script>
+    const APP_ID = "tz8xag";
+    const WORKFLOW_ID = "selfie";
+
+    window.addEventListener("load", () => {
+      HyperKYCModule.prefetch(APP_ID, WORKFLOW_ID);
+    });
+
+    function setStatus(msg) {
+      document.getElementById("status").textContent = msg;
+    }
+
+    async function launchSelfie() {
+      try {
+        if (typeof HyperKycConfig === "undefined") {
+          setStatus("SDK failed to load. Hard refresh the page.");
+          return;
+        }
+
+        setStatus("Getting token...");
+        const res = await fetch("/api/token");
+        const data = await res.json();
+
+        if (!res.ok) {
+          setStatus("Token failed: " + JSON.stringify(data));
+          return;
+        }
+
+        setStatus("Launching workflow...");
+
+        // integrationDoc.md Option 1: accessToken + workflowId + transactionId
+        const hyperKycConfig = new HyperKycConfig(
+          data.token,
+          WORKFLOW_ID,
+          data.transactionId,
+          false
+        );
+
+        if (HyperKYCModule.configErrorMessage) {
+          setStatus("Config error: " + HyperKYCModule.configErrorMessage);
+          return;
+        }
+
+        await HyperKYCModule.launch(hyperKycConfig, (result) => {
+          setStatus("Result: " + result.status);
+          console.log(result);
+          if (result.status === "error") {
+            alert(result.error || "SDK error — check console");
+          }
+        });
+      } catch (err) {
+        setStatus("Error: " + err.message);
+        console.error(err);
+      }
+    }
+  </script>
+</body>
+</html>
