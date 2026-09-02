@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SDK Debug Scenarios</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; }
+    .scenario { border: 1px solid #ddd; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; }
+    .scenario h3 { margin: 0 0 0.5rem; }
+    .checks { font-size: 0.85rem; color: #555; background: #f5f5f5; padding: 0.5rem; border-radius: 4px; }
+    .pass { color: green; font-weight: bold; }
+    .fail { color: red; font-weight: bold; }
+    button { margin-top: 0.5rem; padding: 0.4rem 1rem; cursor: pointer; }
+    #log { white-space: pre-wrap; font-size: 0.85rem; background: #111; color: #0f0; padding: 1rem; border-radius: 4px; margin-top: 1rem; max-height: 200px; overflow: auto; }
+  </style>
+</head>
+<body>
+  <h1>HyperVerge SDK Debug Scenarios</h1>
+  <p>Each scenario tests one variable. Run them in order and note which pass/fail.</p>
+  <div id="scenarios">Loading...</div>
+  <div id="log"></div>
+
+  <script>
+    const APP_ID = "tz8xag";
+    let sdkLoaded = null;
+
+    function log(msg) {
+      const el = document.getElementById("log");
+      el.textContent += msg + "\n";
+      console.log(msg);
+    }
+
+    function loadSdk(version) {
+      return new Promise((resolve, reject) => {
+        if (sdkLoaded === version) return resolve();
+        document.querySelectorAll("script[data-sdk]").forEach(s => s.remove());
+        delete window.HyperKycConfig;
+        delete window.HyperKYCModule;
+        const s = document.createElement("script");
+        s.src = `https://hv-web-sdk-cdn.hyperverge.co/hyperverge-web-sdk@${version}/src/sdk.min.js`;
+        s.dataset.sdk = version;
+        s.onload = () => { sdkLoaded = version; resolve(); };
+        s.onerror = reject;
+        document.head.appendChild(s);
+      });
+    }
+
+    async function runScenario(sc) {
+      log(`\n--- Running ${sc.id}: ${sc.name} ---`);
+      try {
+        await loadSdk(sc.sdkVersion);
+        HyperKYCModule.prefetch(APP_ID, sc.workflowId);
+
+        let config;
+        if (sc.init === "option2") {
+          config = new HyperKycConfig(sc.token, false);
+        } else {
+          config = new HyperKycConfig(sc.token, sc.workflowId, sc.transactionId, false);
+        }
+
+        if (HyperKYCModule.configErrorMessage) {
+          log(`FAIL config: ${HyperKYCModule.configErrorMessage}`);
+          return { id: sc.id, result: "config_error", msg: HyperKYCModule.configErrorMessage };
+        }
+
+        return new Promise((resolve) => {
+          HyperKYCModule.launch(config, (result) => {
+            log(`${sc.id} → status: ${result.status}${result.errorMessage ? " | " + result.errorMessage : ""}`);
+            resolve({ id: sc.id, result: result.status, msg: result.errorMessage || result.error || "" });
+          });
+        });
+      } catch (err) {
+        log(`FAIL exception: ${err.message}`);
+        return { id: sc.id, result: "exception", msg: err.message };
+      }
+    }
+
+    async function init() {
+      const res = await fetch("/api/debug/scenarios");
+      const { scenarios } = await res.json();
+      const container = document.getElementById("scenarios");
+
+      container.innerHTML = scenarios.map(sc => `
+        <div class="scenario">
+          <h3>${sc.id}. ${sc.name}</h3>
+          <p><strong>Expected:</strong> ${sc.expected}</p>
+          <p><strong>SDK:</strong> ${sc.sdkVersion} | <strong>Init:</strong> ${sc.init}</p>
+          <div class="checks">${JSON.stringify(sc.checks, null, 2)}</div>
+          <button onclick="runOne('${sc.id}')">Run ${sc.id}</button>
+        </div>
+      `).join("");
+
+      window._scenarios = scenarios;
+      window.runOne = async (id) => {
+        const sc = window._scenarios.find(s => s.id === id);
+        await runScenario(sc);
+      };
+    }
+
+    init();
+  </script>
+</body>
+</html>

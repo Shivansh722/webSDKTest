@@ -4,12 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Selfie Workflow Test</title>
-  <!-- @latest is stale (2022). Use a current version. -->
   <script src="https://hv-web-sdk-cdn.hyperverge.co/hyperverge-web-sdk@9.5.0/src/sdk.min.js"></script>
 </head>
 <body>
   <button type="button" onclick="launchSelfie()">Launch Selfie</button>
   <p id="status"></p>
+  <p><a href="/debug.html">→ Open debug scenarios</a></p>
 
   <script>
     const APP_ID = "tz8xag";
@@ -39,9 +39,8 @@
           return;
         }
 
-        setStatus("Launching workflow...");
+        setStatus("Launching workflow (SDK 9.5.0)...");
 
-        // integrationDoc.md Option 1: accessToken + workflowId + transactionId
         const hyperKycConfig = new HyperKycConfig(
           data.token,
           WORKFLOW_ID,
